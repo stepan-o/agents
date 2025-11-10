@@ -45,7 +45,7 @@ def _wait_for_run(
     """
     start = time.monotonic()
     while True:
-        r = client.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
+        r = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
         if getattr(r, "status", None) in _TERMINAL_STATUSES:
             return r
         if timeout is not None and (time.monotonic() - start) > timeout:
@@ -94,7 +94,7 @@ def run_repl(
 
         # Add user message to the thread
         try:
-            client.threads.messages.create(
+            client.beta.threads.messages.create(
                 thread_id=thread.id,
                 role="user",
                 content=user_input,
@@ -105,7 +105,7 @@ def run_repl(
 
         # Create a run and poll until completion
         try:
-            run = client.threads.runs.create(
+            run = client.beta.threads.runs.create(
                 thread_id=thread.id,
                 assistant_id=assistant_id,
             )
@@ -125,7 +125,7 @@ def run_repl(
 def print_last_assistant_message(client: OpenAI, thread_id: str) -> None:
     """Fetch recent messages and print the most-recent assistant reply, if any."""
     try:
-        msgs = client.threads.messages.list(thread_id=thread_id, order="desc", limit=10)
+        msgs = client.beta.threads.messages.list(thread_id=thread_id, order="desc", limit=10)
         for m in getattr(msgs, "data", []) or []:
             if getattr(m, "role", None) == "assistant":
                 text = extract_text_from_message(m)

@@ -70,7 +70,7 @@ def build_agent(client: OpenAI, spec: Optional[AgentSpec] = None):
     """
     # Defaulting behavior: if no spec is provided, use the default AgentSpec()
     s = spec or AgentSpec()
-    assistant = client.assistants.create(
+    assistant = client.beta.assistants.create(
         name=s.name,
         model=s.model,
         instructions=s.instructions,
@@ -81,6 +81,6 @@ def build_agent(client: OpenAI, spec: Optional[AgentSpec] = None):
 def create_session(client: OpenAI, agent_id: str):
     """Create a conversation thread for the given assistant id (id not used here).
 
-    The returned object is a Thread that can be used with `client.threads`.
+    The returned object is a Thread that can be used with `client.beta.threads`.
     """
-    return client.threads.create()
+    return client.beta.threads.create()
