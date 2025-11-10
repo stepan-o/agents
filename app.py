@@ -89,18 +89,20 @@ def main() -> int:
     if args.mode == "assistants":
         spec = AgentSpec()
         if args.model:
-            spec.model = args.model
+            spec.model = args.model  # Example to override instructions for Assistants:
+                                     # spec.instructions = "You are ..."  # prefer using AgentSpec
         try:
             assistant = build_agent(client, spec)
             thread = create_session(client, assistant.id)
         except Exception as e:
             print("ERROR: Failed to create assistant/thread:", e)
             return 1
+        # Use default intro/prompt from run_repl(); do not override by default.
+        # To customize the intro, pass intro=... to run_repl().
         run_repl(
             client,
             thread,
             assistant_id=assistant.id,
-            intro="🤖 Assistants mode — type 'exit' to quit",
         )
         return 0
 
@@ -108,25 +110,33 @@ def main() -> int:
     # each turn. `--system` seeds the transcript; `--stream` enables best-effort
     # token streaming when supported by the SDK/model.
     if args.mode == "chat":
-        chat_loop(
-            client,
-            model=args.model or "gpt-4o-mini",
-            system_prompt=args.system or "You are a helpful, general-purpose AI assistant. Be concise but complete.",
-            intro="🗨️ Chat Completions mode — type 'exit' to quit",
-            stream=bool(args.stream),
-        )
+        # Use defaults from chat_completions.chat_loop unless overrides are provided.
+        # Example to override in code (prefer CLI flags):
+        # chat_loop(client, model="gpt-4o-mini", system_prompt="You are helpful", intro="...", stream=True)
+        kwargs = {}
+        if args.model:
+            kwargs["model"] = args.model
+        if args.system:
+            kwargs["system_prompt"] = args.system
+        if args.stream:
+            kwargs["stream"] = True
+        chat_loop(client, **kwargs)
         return 0
 
     # Responses API mode: similar console UX but uses the Responses endpoint
     # under the hood instead of Chat Completions.
     if args.mode == "responses":
-        responses_loop(
-            client,
-            model=args.model or "gpt-4o-mini",
-            system_prompt=args.system or "You are a helpful, general-purpose AI assistant. Be concise but complete.",
-            intro="🧰 Responses API mode — type 'exit' to quit",
-            stream=bool(args.stream),
-        )
+        # Use defaults from responses_mode.responses_loop unless overrides are provided.
+        # Example to override in code (prefer CLI flags):
+        # responses_loop(client, model="gpt-4o-mini", system_prompt="You are helpful", intro="...", stream=True)
+        kwargs = {}
+        if args.model:
+            kwargs["model"] = args.model
+        if args.system:
+            kwargs["system_prompt"] = args.system
+        if args.stream:
+            kwargs["stream"] = True
+        responses_loop(client, **kwargs)
         return 0
 
     # Defensive guard: argparse should restrict values, but keep a fallback.
