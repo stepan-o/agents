@@ -3,7 +3,7 @@ name = "openai-agents-starter"
 version = "0.1.0"
 description = "Generic OpenAI assistants (agents) REPL and framework starter"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 # Start with an empty dependency list. You can continue using requirements.txt
 # (via `make setup`) or switch to uv's pyproject workflow and run
 # `uv add <package>` to populate this list.
