@@ -65,7 +65,7 @@ def responses_loop(
     *,
     model: str = DEFAULT_MODEL,
     system_prompt: str = DEFAULT_SYSTEM,
-    intro: str = "🧰 Responses API mode — type 'exit' to quit",
+    intro: str = DEFAULT_INTRO,
     prompt: str = "You: ",
     stream: bool = False,
 ) -> None:
