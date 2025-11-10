@@ -1,85 +1,137 @@
+"""Application entrypoint for experimenting with OpenAI in multiple modes.
+
+This module wires a small CLI to three runtime paths implemented in `agentkit/`:
+- assistants: Uses the Assistants/Threads/Runs APIs (server-side thread state)
+- chat: Uses the Chat Completions API (client-side transcript)
+- responses: Uses the Responses API (client-side transcript)
+
+It constructs a single `OpenAI` client (reading `OPENAI_API_KEY` from your OS
+environment) and routes control based on `--mode`. This file intentionally keeps
+policy/behavior minimal; see individual modules in `agentkit/` for details.
+
+Quick start:
+- `make run`                 → Assistants mode (default)
+- `make run-chat`            → Chat Completions mode
+- `make run-responses`       → Responses API mode
+- `python app.py --help`     → Show all options
+"""
+
 import argparse
 import os
-from typing import Optional
 
 from openai import OpenAI
 
 from agentkit.builder import AgentSpec, build_agent, create_session
 from agentkit.repl import run_repl
+from agentkit import chat_loop, responses_loop
 
 
-def get_model_override() -> Optional[str]:
-    """Parse the optional --model CLI flag and return its value.
+def parse_args():
+    """Define and parse CLI flags for selecting mode and behavior.
 
-    Purpose
-    - Allows you to override the default model defined in AgentSpec at runtime
-      without editing code.
-
-    Behavior
-    - Returns the model name string when provided (e.g., "gpt-4o-mini").
-    - Returns None when --model is not passed, so callers can keep defaults.
-
-    Example
-    - python app.py --model gpt-4o-mini
+    Flags
+    - --mode {assistants,chat,responses}: Selects which API the REPL uses. Defaults to assistants.
+    - --model <name>: Overrides the model used by the selected mode (Assistants uses AgentSpec.model).
+    - --system <text>: Sets a system prompt/instructions for chat/responses modes.
+    - --stream: Enables best-effort streaming for chat/responses modes (ignored in assistants mode).
     """
-    parser = argparse.ArgumentParser(description="Generic OpenAI Agents REPL")
-    parser.add_argument("--model", help="Override model name (default from AgentSpec)")
-    args = parser.parse_args()
-    return args.model
+    parser = argparse.ArgumentParser(description="Generic OpenAI Agents/Chat/Responses REPL")
+
+    # Model override applies to all modes. For Assistants, it updates AgentSpec.model.
+    parser.add_argument("--model", help="Override model name (default from AgentSpec or mode default)")
+
+    # Mode determines which submodule runs (assistants/chat/responses).
+    parser.add_argument(
+        "--mode",
+        choices=["assistants", "chat", "responses"],
+        default="assistants",
+        help="Interaction mode: assistants (default), chat (Chat Completions), responses (Responses API)",
+    )
+
+    # Streaming flag is only meaningful for chat/responses; Assistants REPL is non-streaming.
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="Enable streaming output when supported (chat/responses modes)",
+    )
+
+    # System prompt is used to seed local transcripts in chat/responses modes.
+    parser.add_argument(
+        "--system",
+        help="Override system prompt/instructions for chat/responses modes",
+    )
+    return parser.parse_args()
 
 
 def main() -> int:
-    """High-level entrypoint for a generic OpenAI Assistant REPL.
+    """High-level entrypoint for generic OpenAI experimentation modes.
 
-    What it does
-    - Reads OPENAI_API_KEY from the OS environment.
-    - Constructs an OpenAI SDK client (no network call on construction).
-    - Builds an Assistant and creates a Thread via agentkit.builder.
-    - Starts the interactive loop via agentkit.repl.run_repl.
-
-    Inputs
-    - CLI: optional --model flag parsed by get_model_override() to override AgentSpec.model.
-
-    Environment
-    - OPENAI_API_KEY: API authentication (must be set in your OS environment).
-
-    Returns
-    - int: 0 on success, 1 if assistant/thread creation fails.
-
-    Notes
-    - Prints a warning if API key is missing; the app will not be able to call the API.
-    - Network requests occur only when calling the OpenAI client methods (assistant/thread creation and REPL runs).
+    Modes
+    - assistants: Assistants/Threads/Runs via agentkit.builder + agentkit.repl
+    - chat: Chat Completions API via agentkit.chat_completions.chat_loop
+    - responses: Responses API via agentkit.responses_mode.responses_loop
     """
-    # Read API key from environment (prefer global OS env)
+    args = parse_args()
+
+    # Read API key from environment (prefer global OS env). The OpenAI SDK
+    # automatically reads `OPENAI_API_KEY` when constructing the client below.
+    # We warn early if it's missing so the user sees a friendly message.
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("WARNING: OPENAI_API_KEY is not set. The app will not be able to call the API.")
 
-    # OpenAI here is the Python SDK client class (from `openai` package)
-    # Constructing the client does not make a network call; it automatically reads configuration
-    # from environment variables (e.g., OPENAI_API_KEY) when no api_key is passed.
+    # Construct a single client instance shared across modes. Creating the
+    # client does not perform a network call; API requests happen on method use.
     client = OpenAI()
 
-    # Build assistant and thread
-    spec = AgentSpec()
-    override = get_model_override()
-    if override:
-        spec.model = override
+    # Assistants mode: create (or reuse) an Assistant and a Thread, then run the
+    # Assistants REPL. `--model` overrides the spec's model at runtime.
+    if args.mode == "assistants":
+        spec = AgentSpec()
+        if args.model:
+            spec.model = args.model
+        try:
+            assistant = build_agent(client, spec)
+            thread = create_session(client, assistant.id)
+        except Exception as e:
+            print("ERROR: Failed to create assistant/thread:", e)
+            return 1
+        run_repl(
+            client,
+            thread,
+            assistant_id=assistant.id,
+            intro="🤖 Assistants mode — type 'exit' to quit",
+        )
+        return 0
 
-    try:
-        assistant = build_agent(client, spec)
-        thread = create_session(client, assistant.id)
-    except Exception as e:
-        print("ERROR: Failed to create assistant/thread:", e)
-        return 1
+    # Chat Completions mode: maintain a local transcript and call the Chat API
+    # each turn. `--system` seeds the transcript; `--stream` enables best-effort
+    # token streaming when supported by the SDK/model.
+    if args.mode == "chat":
+        chat_loop(
+            client,
+            model=args.model or "gpt-4o-mini",
+            system_prompt=args.system or "You are a helpful, general-purpose AI assistant. Be concise but complete.",
+            intro="🗨️ Chat Completions mode — type 'exit' to quit",
+            stream=bool(args.stream),
+        )
+        return 0
 
-    run_repl(
-        client,
-        thread,
-        assistant_id=assistant.id,
-        intro="🤖 Generic AI Agent — type 'exit' to quit",
-    )
-    return 0
+    # Responses API mode: similar console UX but uses the Responses endpoint
+    # under the hood instead of Chat Completions.
+    if args.mode == "responses":
+        responses_loop(
+            client,
+            model=args.model or "gpt-4o-mini",
+            system_prompt=args.system or "You are a helpful, general-purpose AI assistant. Be concise but complete.",
+            intro="🧰 Responses API mode — type 'exit' to quit",
+            stream=bool(args.stream),
+        )
+        return 0
+
+    # Defensive guard: argparse should restrict values, but keep a fallback.
+    print(f"Unknown mode: {args.mode}")
+    return 1
 
 
 if __name__ == "__main__":

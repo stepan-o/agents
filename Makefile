@@ -1,88 +1,71 @@
-# Use a Python interpreter path, preferrably from .env if provided
-# Managed by uv (https://docs.astral.sh/uv/)
-# Common tasks for this project.
+# Minimal Makefile for running the multi‑mode OpenAI REPL with uv
+# Docs: https://docs.astral.sh/uv/
 
-# Load variables from .env if present (e.g., UV_PYTHON)
+# Load variables from .env if present (e.g., UV_PYTHON). Do NOT put secrets there.
 -include .env
 export
 
-.PHONY: setup sync run smoke python info shell
+.PHONY: setup run run-chat run-responses smoke help
 
-VENV=venv
-# Prefer UV_PYTHON from .env; otherwise auto-detect .venv, else fall back to ./venv
-PY?=$(UV_PYTHON)
-ifeq ($(PY),)
-ifneq (,$(wildcard .venv/bin/python))
-PY=.venv/bin/python
-else
-PY=$(VENV)/bin/python
+# Optional: point to a specific interpreter (recommended via .env)
+# Example: UV_PYTHON="/path/to/python" make run
+PY ?= $(UV_PYTHON)
+RUN_P := $(if $(PY),-p $(PY),)
+
+# Parameterized run-time options (used by the app's CLI)
+# Usage examples:
+#   make run                                   # assistants mode
+#   make run MODEL=gpt-4o-mini                 # override model
+#   make run MODE=chat SYSTEM="You are helpful" STREAM=true
+#   make run MODE=responses SYSTEM="You are helpful" STREAM=true
+MODE   ?= assistants
+MODEL  ?=
+SYSTEM ?=
+STREAM ?=
+
+CLI_ARGS := --mode $(MODE)
+ifneq ($(MODEL),)
+CLI_ARGS += --model $(MODEL)
+endif
+ifneq ($(SYSTEM),)
+CLI_ARGS += --system $(SYSTEM)
+endif
+# Accept common truthy values for STREAM → add --stream
+ifneq ($(STREAM),)
+ifeq ($(filter $(STREAM),1 true yes on TRUE YES On),$(STREAM))
+CLI_ARGS += --stream
 endif
 endif
 
-# Create the local venv with uv if needed and install deps using uv
+# 1) Install deps with uv (uses requirements.txt)
 setup:
-ifeq ($(UV_PYTHON),)
-# Only create ./venv if we're actually targeting it (not when using .venv)
-ifneq (,$(findstring $(VENV)/bin/python,$(PY)))
-	@if [ ! -d "$(VENV)" ]; then \
-		uv venv $(VENV); \
-	fi
-endif
-endif
-	uv pip install -p $(PY) -r requirements.txt
+	uv pip install $(RUN_P) -r requirements.txt
 
-# Re-sync the environment strictly to requirements.txt (removes extras)
-sync:
-	uv pip sync -p $(PY) requirements.txt
-
-# Run the application via the selected interpreter (UV_PYTHON or local venv)
+# 2) Run the app (parameterized via MODE/MODEL/SYSTEM/STREAM)
 run: setup
-	uv run -p $(PY) python app.py
+	uv run $(RUN_P) python app.py $(CLI_ARGS)
 
-# Run the offline smoke test via the selected interpreter
+# Convenience wrappers for modes
+run-chat: MODE=chat
+run-chat: run
+
+run-responses: MODE=responses
+run-responses: run
+
+# Offline smoke test (no network calls)
 smoke: setup
-	uv run -p $(PY) python smoke_test.py
+	uv run $(RUN_P) python smoke_test.py
 
-# Drop into a Python REPL inside the selected interpreter env
-python: setup
-	uv run -p $(PY) python
-
-# Start a subshell inside the selected environment (Unix shells).
-# - If an activate script exists next to $(PY) (e.g., .venv/bin/activate or venv/bin/activate), use it.
-# - Otherwise, fall back to `uv run -p $(PY) bash -l` which runs a shell in the chosen interpreter context.
-shell:
-	@if [ -f "$(dir $(PY))activate" ]; then \
-		echo "Activating $(dir $(PY))activate and starting bash -l ..."; \
-		bash -lc "source $(dir $(PY))activate && bash -l"; \
-	else \
-		echo "No activate script found next to $(PY). Falling back to 'uv run -p $(PY) bash -l' ..."; \
-		uv run -p $(PY) bash -l; \
-	fi
-
-# Display interpreter path for IDE configuration
-info:
-	@echo "Interpreter path used by Make targets (from .env UV_PYTHON if set; else ./.venv or ./venv):"
-	@echo "$(abspath $(PY))"
-
-# Remove local environments (use with care)
-.PHONY: clean clean-venv clean-dotvenv
-clean-venv:
-	@if [ -d "venv" ]; then \
-		echo "Removing ./venv ..."; \
-		rm -rf venv; \
-		echo "./venv removed."; \
-	else \
-		echo "./venv does not exist (nothing to do)."; \
-	fi
-
-clean-dotvenv:
-	@if [ -d ".venv" ]; then \
-		echo "Removing ./.venv ..."; \
-		rm -rf .venv; \
-		echo "./.venv removed."; \
-	else \
-		echo "./.venv does not exist (nothing to do)."; \
-	fi
-
-# Convenience: remove both variants
-clean: clean-venv clean-dotvenv
+# Show quick usage with parameter examples
+help:
+	@echo "Usage:"
+	@echo "  make setup                         # install deps"
+	@echo "  make run                           # Assistants mode (default)"
+	@echo "  make run MODEL=gpt-4o-mini         # set model in Assistants mode"
+	@echo "  make run MODE=chat SYSTEM='You are helpful' STREAM=true"
+	@echo "  make run MODE=responses SYSTEM='You are helpful' STREAM=true"
+	@echo "  make run-chat                      # Chat mode shortcut"
+	@echo "  make run-responses                 # Responses mode shortcut"
+	@echo "\nNotes:"
+	@echo "  - To use a specific interpreter, set UV_PYTHON in .env (see .env.example)."
+	@echo "  - OPENAI_API_KEY must be set in your OS environment."

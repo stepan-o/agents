@@ -31,7 +31,8 @@ def main() -> int:
     try:
         from agentkit.builder import AgentSpec, build_agent, create_session  # type: ignore
         from agentkit.repl import run_repl  # type: ignore
-        _ = (AgentSpec, build_agent, create_session, run_repl)
+        from agentkit import chat_loop, responses_loop  # type: ignore
+        _ = (AgentSpec, build_agent, create_session, run_repl, chat_loop, responses_loop)
         print("agentkit package imported successfully.")
     except Exception as e:
         print("ERROR: Failed to import local agentkit package:")
@@ -39,7 +40,7 @@ def main() -> int:
         return 1
 
     print("\nSmoke test passed. Your environment looks good.")
-    print("Next: `python app.py` to run the REPL.")
+    print("Next: `python app.py --mode assistants|chat|responses` to run a REPL.")
     return 0
 
 

@@ -1,6 +1,6 @@
 # openai-agents-starter
 
-A minimal Python REPL app using the OpenAI Python SDK (Assistants/Threads/Runs). It provides a generic framework to define, connect to, and test OpenAI assistants (agents). Runtime logic lives in the local `agentkit/` package for clarity and extensibility.
+A minimal Python REPL app using the OpenAI Python SDK supporting three experimentation modes: Assistants (Assistants/Threads/Runs), Chat Completions, and Responses API. Runtime logic lives in the local `agentkit/` package for clarity and extensibility.
 
 ## Quick start
 - Recommended (existing uv environment):
@@ -20,9 +20,7 @@ A minimal Python REPL app using the OpenAI Python SDK (Assistants/Threads/Runs).
 Common tasks
 ```bash
 make smoke   # offline smoke test
-make python  # Python REPL in the selected env
-make shell   # subshell in the selected env
-make info    # print the interpreter path used by Make
+make help    # show Make targets and parameterized usage examples
 ```
 
 ## Environment
@@ -41,9 +39,14 @@ Examples
 
 ## Run the app
 ```bash
-make run
-# or
-python app.py --model gpt-4o-mini
+make run                # Assistants mode (default)
+make run-chat           # Chat Completions mode
+make run-responses      # Responses API mode
+
+# Or with python directly
+python app.py --mode assistants --model gpt-4o-mini
+python app.py --mode chat --model gpt-4o-mini --system "You are helpful" --stream
+python app.py --mode responses --model gpt-4o-mini --system "You are helpful" --stream
 ```
 The console starts a REPL. Type messages; type `exit` to quit.
 
@@ -53,11 +56,16 @@ make smoke
 ```
 
 ## Architecture
-- `app.py` — entrypoint; builds OpenAI client, constructs assistant/thread via `agentkit.builder`, starts REPL from `agentkit.repl`. Supports `--model`.
+- `app.py` — entrypoint; builds OpenAI client and routes by `--mode`.
+  - assistants: constructs assistant/thread via `agentkit.builder` and runs `agentkit.repl.run_repl`.
+  - chat: runs `agentkit.chat_completions.chat_loop` (Chat Completions API).
+  - responses: runs `agentkit.responses_mode.responses_loop` (Responses API).
 - `agentkit/`
   - `builder.py` — build the Assistant (Assistants API) and create a Thread. Central place to change model/instructions/name.
-  - `repl.py` — minimal loop to send user messages and print replies.
-  - `__init__.py` — re‑exports for convenience.
+  - `repl.py` — minimal loop to send user messages and print replies (Assistants mode).
+  - `chat_completions.py` — REPL utilities for the Chat Completions API.
+  - `responses_mode.py` — REPL utilities for the Responses API.
+  - `__init__.py` — re‑exports convenience functions across modes.
 
 ## Housekeeping
 - Git ignore: a root `.gitignore` is provided; it ignores envs, caches, IDE files, and build artifacts. `uv.lock` stays tracked.
