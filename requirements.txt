@@ -1,0 +1,3 @@
+# Runtime dependencies for this project
+# Using OpenAI Python SDK (v2+) for beta Agents API
+openai>=2.7.1

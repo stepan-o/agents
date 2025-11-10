@@ -1,0 +1,42 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+wheels/
+.python-version
+
+# --- Environments ---
+.venv/
+venv/
+.env
+.env.*
+
+# --- Testing / coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# --- Linters / type checkers ---
+.mypy_cache/
+.pytype/
+.ruff_cache/
+
+# --- Editors / IDEs ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- OS / misc ---
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
+
+# --- Notes ---
+# Keep uv.lock committed for reproducible installs with `uv sync`.
