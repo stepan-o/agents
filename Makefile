@@ -5,7 +5,7 @@
 -include .env
 export
 
-.PHONY: setup run run-chat run-responses smoke help
+.PHONY: setup run run-chat run-responses run-harness smoke help
 
 # Optional: point to a specific interpreter (recommended via .env)
 # Example: UV_PYTHON="/path/to/python" make run
@@ -52,6 +52,10 @@ run-chat: run
 run-responses: MODE=responses
 run-responses: run
 
+# Non-interactive 5-question testing harness
+run-harness: setup
+	uv run $(RUN_P) python -m agentkit.harness $(CLI_ARGS)
+
 # Offline smoke test (no network calls)
 smoke: setup
 	uv run $(RUN_P) python smoke_test.py
@@ -66,6 +70,7 @@ help:
 	@echo "  make run MODE=responses SYSTEM='You are helpful' STREAM=true"
 	@echo "  make run-chat                      # Chat mode shortcut"
 	@echo "  make run-responses                 # Responses mode shortcut"
+	@echo "  make run-harness                   # Run 5-question harness (respects MODE/MODEL/SYSTEM)"
 	@echo "\nNotes:"
 	@echo "  - To use a specific interpreter, set UV_PYTHON in .env (see .env.example)."
 	@echo "  - OPENAI_API_KEY must be set in your OS environment."
