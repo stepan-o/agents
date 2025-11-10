@@ -1,6 +1,6 @@
 # openai-agents-starter
 
-A minimal Python REPL app using the OpenAI Python SDK (Assistants/Threads/Runs). It provides a generic framework to define, connect to, and test OpenAI assistants (agents) using different APIs. Runtime logic is organized in the local `agents/` package for clarity and extensibility.
+A minimal Python REPL app using the OpenAI Python SDK (Assistants/Threads/Runs). It provides a generic framework to define, connect to, and test OpenAI assistants (agents) using different APIs. Runtime logic is organized in the local `agentkit/` package for clarity and extensibility.
 
 ## Quick start
 - Option A — Use an existing uv environment via `.env` (preferred):
@@ -88,8 +88,8 @@ source venv/bin/activate && python smoke_test.py
   - venv (fallback created by `make setup`): `<project_root>/venv/bin/python` or `<project_root>\venv\Scripts\python.exe`
 
 ## Architecture (short)
-- app.py — entrypoint. Builds the OpenAI client, constructs assistant/thread via `agents.builder`, runs the REPL from `agents.repl`. Supports `--model` override.
-- agents/
+- app.py — entrypoint. Builds the OpenAI client, constructs assistant/thread via `agentkit.builder`, runs the REPL from `agentkit.repl`. Supports `--model` override.
+- agentkit/
   - builder.py — builds the Assistant (Assistants API) and creates a Thread. Central place to change model/instructions/name.
   - repl.py — minimal REPL loop to send user messages and print replies.
   - __init__.py — re‑exports common symbols for convenient imports.

@@ -27,14 +27,14 @@ def main() -> int:
         print(e)
         return 1
 
-    print("[4/4] Verifying local agents package imports...")
+    print("[4/4] Verifying local agentkit package imports...")
     try:
-        from agents.builder import AgentSpec, build_agent, create_session  # type: ignore
-        from agents.repl import run_repl  # type: ignore
+        from agentkit.builder import AgentSpec, build_agent, create_session  # type: ignore
+        from agentkit.repl import run_repl  # type: ignore
         _ = (AgentSpec, build_agent, create_session, run_repl)
-        print("agents package imported successfully.")
+        print("agentkit package imported successfully.")
     except Exception as e:
-        print("ERROR: Failed to import local agents package:")
+        print("ERROR: Failed to import local agentkit package:")
         print(e)
         return 1
 

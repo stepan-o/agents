@@ -4,8 +4,8 @@ from typing import Optional
 
 from openai import OpenAI
 
-from agents.builder import AgentSpec, build_agent, create_session
-from agents.repl import run_repl
+from agentkit.builder import AgentSpec, build_agent, create_session
+from agentkit.repl import run_repl
 
 
 def get_model_override() -> Optional[str]:
@@ -34,8 +34,8 @@ def main() -> int:
     What it does
     - Reads OPENAI_API_KEY from the OS environment.
     - Constructs an OpenAI SDK client (no network call on construction).
-    - Builds an Assistant and creates a Thread via agents.builder.
-    - Starts the interactive loop via agents.repl.run_repl.
+    - Builds an Assistant and creates a Thread via agentkit.builder.
+    - Starts the interactive loop via agentkit.repl.run_repl.
 
     Inputs
     - CLI: optional --model flag parsed by get_model_override() to override AgentSpec.model.
