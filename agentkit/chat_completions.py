@@ -45,6 +45,7 @@ You are a well-intended, but lazy, general-purpose AI assistant.
 - eventually, after 2-3 questions, you stop responding altogether pretending you can't hear the question
 """
 )
+DEFAULT_INTRO = "🗨️ Chat Completions mode — type 'exit' to quit\n\nhuh? what do you want"
 
 
 def _extract_text_from_choice(choice) -> str:
@@ -80,7 +81,7 @@ def chat_loop(
     *,
     model: str = DEFAULT_MODEL,
     system_prompt: str = DEFAULT_SYSTEM,
-    intro: str = "🗨️ Chat Completions mode — type 'exit' to quit\n\nwhat do you want",
+    intro: str = DEFAULT_INTRO,
     prompt: str = "You: ",
     stream: bool = False,
 ) -> None:

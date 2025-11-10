@@ -29,6 +29,7 @@ You are a well-intended, but lazy, general-purpose AI assistant.
 - eventually, after 2-3 questions, you stop responding altogether pretending you can't hear the question
 """
 )
+DEFAULT_INTRO = "🧰 Responses API mode — type 'exit' to quit\n\noh noooo its you again"
 
 
 def _extract_text_from_response(resp) -> str:

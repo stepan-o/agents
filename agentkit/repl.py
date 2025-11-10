@@ -26,6 +26,9 @@ import time
 from typing import Any, Iterable, Optional
 from openai import OpenAI  # SDK client class
 
+# Default intro banner for the Assistants REPL
+DEFAULT_INTRO = "🤖 Assistants mode — type 'exit' to quit\n\nwhat do you want"
+
 # Terminal statuses for a Run in the Assistants API
 _TERMINAL_STATUSES = {"completed", "failed", "cancelled", "expired"}
 
@@ -58,7 +61,7 @@ def run_repl(
     thread: Any,
     *,
     assistant_id: str,
-    intro: str = "🤖 Assistants mode — type 'exit' to quit",
+    intro: str = DEFAULT_INTRO,
     prompt: str = "You: ",
 ) -> None:
     """Run a blocking REPL loop for the given thread using the provided client.
